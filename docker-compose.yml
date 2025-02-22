@@ -2,16 +2,19 @@ services:
   tailscale:
     image: tailscale/tailscale
     container_name: tailscale
+    hostname: raspberry
     environment:
-      - TS_EXTRA_ARGS=--advertise-tags=tag:container
+      - TS_EXTRA_ARGS=--advertise-tags=tag:server --accept-dns=true
       - TS_STATE_DIR=/var/lib/tailscale
       - TS_USERSPACE=false
       - TS_HOSTNAME=raspberry
+      - TS_DEST_IP=192.168.2.98
     env_file:
       - .env.tailscale
     volumes:
       - /var/lib/tailscale:/var/lib/tailscale
       - /dev/net/tun:/dev/net/tun
+    network_mode: host
     devices:
       - /dev/net/tun:/dev/net/tun
     cap_add:
@@ -38,9 +41,13 @@ services:
       - "3000:3000"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - /var/lib/weblatex:/app/weblatex/compiler_workspace
+      - ./weblatex:/app/weblatex/compiler_workspace
     env_file:
       - .env.weblatex
+    restart: unless-stopped
+    depends_on:
+      mariadb:
+        condition: service_healthy
   pihole:
     image: pihole/pihole
     container_name: pihole
@@ -49,3 +56,14 @@ services:
     volumes:
       - '/etc/pihole:/etc/pihole'
     network_mode: host
+    restart: unless-stopped
+  nginx:
+    image: nginx
+    container_name: nginx
+    volumes:
+      - './nginx.conf:/etc/nginx/nginx.conf'
+    network_mode: host
+    restart: unless-stopped
+    depends_on:
+      weblatex:
+        condition: service_started
