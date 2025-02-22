@@ -1,0 +1,51 @@
+services:
+  tailscale:
+    image: tailscale/tailscale
+    container_name: tailscale
+    environment:
+      - TS_EXTRA_ARGS=--advertise-tags=tag:container
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_USERSPACE=false
+      - TS_HOSTNAME=raspberry
+    env_file:
+      - .env.tailscale
+    volumes:
+      - /var/lib/tailscale:/var/lib/tailscale
+      - /dev/net/tun:/dev/net/tun
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    cap_add:
+      - net_admin
+      - sys_module
+    restart: unless-stopped
+  mariadb:
+    image: mariadb
+    container_name: mariadb
+    restart: unless-stopped
+    environment:
+      - MARIADB_DATABASE=weblatex
+    env_file:
+      .env.mariadb
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      start_period: 15s
+      interval: 60s
+      timeout: 5s
+      retries: 3
+  weblatex:
+    image: weblatex
+    ports:
+      - "3000:3000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/lib/weblatex:/app/weblatex/compiler_workspace
+    env_file:
+      - .env.weblatex
+  pihole:
+    image: pihole/pihole
+    container_name: pihole
+    environment:
+      - FTLCONF_webserver_port=8080
+    volumes:
+      - '/etc/pihole:/etc/pihole'
+    network_mode: host

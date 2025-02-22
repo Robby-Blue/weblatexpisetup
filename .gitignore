@@ -1,0 +1,4 @@
+weblatex/
+.env.mariadb
+.env.tailscale
+.env.weblatex
