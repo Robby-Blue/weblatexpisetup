@@ -1,7 +1,7 @@
 # weblatex
 git clone https://github.com/Robby-Blue/weblatex
 cd weblatex/src
-docker compose build -
+docker compose build
 
 # compilation
 echo '{
